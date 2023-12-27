@@ -1,177 +1,249 @@
-import React, { useRef, useEffect } from "react"
-import echarts from "echarts"
-import Section from "@/components/section"
-import { proxyAxios, axios } from "@/services"
-import _ from "lodash"
-import moment from "moment"
-import { formatDate } from "@/utils"
-
-const option = {
-	backgroundColor: "transparent",
-	tooltip: {
-		trigger: "axis",
-	},
-	xAxis: [
-		{
-			type: "time",
-			splitLine: { show: false },
-		},
-	],
-	yAxis: [
-		{
-			splitLine: { show: false },
-			name: "新增病例",
-			axisLabel: {
-				formatter: (value) => {
-					if (value >= 10000) {
-						return (value / 10000).toFixed(1) + "万"
-					}
-					if (value >= 1000) {
-						return (value / 1000).toFixed(1) + "千"
-					}
-				},
-			},
-		},
-		{
-			splitLine: { show: false },
-			name: "舆情数量",
-			offset: -10,
-			axisLabel: {
-				formatter: (value) => {
-					if (value >= 10000) {
-						return (value / 10000).toFixed(1) + "万"
-					}
-					if (value >= 1000) {
-						return (value / 1000).toFixed(1) + "千"
-					}
-				},
-			},
-		},
-	],
-	grid: [
-		{
-			top: 30,
-			bottom: 20,
-			left: 40,
-		},
-		{
-			top: 30,
-			bottom: 20,
-		},
-	],
-	series: [
-		{
-			name: "新增病例",
-			id: "new",
-			type: "line",
-			showSymbol: false,
-			tooltip: {},
-		},
-		{
-			name: "舆情数量",
-			id: "opinion",
-			type: "bar",
-			showSymbol: false,
-			xAxisIndex: 0,
-			yAxisIndex: 1,
-			tooltip: {
-				formatter: "舆情数量: {b}",
-			},
-		},
-	],
-}
+import React, { useRef, useEffect } from "react";
+import * as d3 from "d3";
+import Section from "@/components/section";
+import { proxyAxios, axios } from "@/services";
+import _ from "lodash";
+import moment from "moment";
+import { formatDate } from "@/utils";
 
 export default function Index() {
-	const container = useRef(null)
-	const chart = useRef(null)
+  const container = useRef(null);
+  const chart = useRef(null);
 
-	useEffect(() => {
-		function initChart() {
-			chart.current = echarts.init(container.current, "dark")
-			chart.current.setOption(option)
-		}
+  useEffect(() => {
+    function initChart() {
+      const svg = d3
+        .select(container.current)
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", "0 0 500 300");
 
-		function getData() {
-			// proxyAxios('ProvinceData').then(res => {
-			//     const newData = _.chain(res)
-			//         .map(d => _.forEach(d, (d1, k, o) => {
-			//                 o[k] = isNaN(+d1) ? d1 : Number(d1)
-			//             })
-			//         )
-			//         .reduce((obj, d) => {
-			//             const key = d.updateTime
-			//             if (!obj[key]) {
-			//                 obj[key] = {
-			//                     data: [],
-			//                     updateTime: d.updateTime,
-			//                     timeStamp: moment(d.updateTime).valueOf(),
-			//                 }
-			//             }
-			//             obj[key].data.push(d)
-			//             return obj
-			//         }, {})
-			//         .values()
-			//         .forEach((d, ind, arr) => {
-			//             const { data } = d
-			//             d.province_confirmedCount = _.sumBy(data, 'province_confirmedCount')
-			//             d.province_curedCount = _.sumBy(data, 'province_curedCount')
-			//             d.province_deadCount = _.sumBy(data, 'province_deadCount')
-			//             d.province_suspectedCount = _.sumBy(data, 'province_suspectedCount')
-			//             d.exist = d.province_confirmedCount
-			//                 - d.province_curedCount - d.province_deadCount
-			//             d.newCount = d.exist - (ind ? arr[ind - 1].exist : 0)
-			//         })
-			//         .orderBy('timeStamp')
-			//         .map(d => [d.updateTime, d.newCount])
-			//         .value()
+      // scale
+      const xScale = d3.scaleTime().range([0, 400]);
+      const y1Scale = d3.scaleLinear().range([290, 10]);
+      const y2Scale = d3.scaleLinear().range([290, 10]);
 
-			//         chart.current.setOption({
-			//             series: {
-			//                 id: 'new',
-			//                 data: newData,
-			//             }
-			//         })
-			// })
-			axios("CountryDailyCount.json").then((res) => {
-				chart.current.setOption({
-					series: {
-						id: "new",
-						data: res.map((d) => [
-							formatDate(d.updateTime),
-							d.confirmedCount,
-						]),
-					},
-				})
-			})
-			axios("CountTopicNum.json").then((res) => {
-				const optionData = _.chain(res)
-					.map((d) => {
-						const date = moment(d.Date, "MM月DD")
-						return {
-							...d,
-							updateTime: date.format("YYYY-MM-DD"),
-							timeStamp: date.valueOf(),
-						}
-					})
-					.orderBy("timeStamp")
-					.map((d) => [d.updateTime, d["总计"]])
-					.value()
+      // axis
+      const xAxis = d3.axisBottom(xScale);
+      const yAxisLeft = d3.axisLeft(y1Scale);
+      const yAxisRight = d3.axisRight(y2Scale);
 
-				chart.current.setOption({
-					series: {
-						id: "opinion",
-						data: optionData,
-					},
-				})
-			})
-		}
-		initChart()
-		getData()
-	}, [])
+      // axis tick
+      svg
+        .append("g")
+        .attr("class", "x-axis")
+        .attr("transform", "translate(0,290)")
+        .call(xAxis);
+      svg
+        .append("g")
+        .attr("class", "y-axis left")
+        .attr("transform", "translate(55,0)")
+        .call(yAxisLeft);
+      svg
+        .append("g")
+        .attr("class", "y-axis right")
+        .attr("transform", "translate(445,0)")
+        .call(yAxisRight);
 
-	return (
-		<Section title="每日新增与舆情数量">
-			<div className="chart-container" ref={container} />
-		</Section>
-	)
+      // axis label
+      svg
+        .append("text")
+        .attr("class", "y1-label")
+        .attr("transform", "translate(0,2)")
+        .attr("fill", "white");
+      svg
+        .append("text")
+        .attr("class", "y2-label")
+        .attr("transform", "translate(400,2)")
+        .attr("fill", "white");
+      svg.select(".y1-label").text("新增病例");
+      svg.select(".y2-label").text("舆情数量");
+      svg.select(".y1-label").style("font-size", "25px");
+      svg.select(".y2-label").style("font-size", "25px");
+    }
+
+    function getData() {
+      Promise.all([
+        axios("CountryDailyCount.json"),
+        axios("CountTopicNum.json"),
+      ])
+        .then(([dailyCountData, topicNumData]) => {
+          const dailyCount = dailyCountData.map((d) => ({
+            date: formatDate(d.updateTime),
+            newCases: +d.confirmedCount,
+          }));
+
+          const topicNum = _.chain(topicNumData)
+            .map((d) => ({
+              date: moment(d.Date, "MM月DD").format("YYYY-MM-DD"),
+              opinionCount: +d["总计"],
+            }))
+            .orderBy("date")
+            .value();
+
+          updateD3Chart(dailyCount, topicNum);
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    }
+
+    function updateD3Chart(dailyCount, topicNum) {
+      const svg = d3.select(container.current).select("svg");
+      const combinedData = [...dailyCount, ...topicNum];
+
+      // scale
+      const xScale = d3
+        .scaleTime()
+        .range([55, 445])
+        .domain(d3.extent(combinedData, (d) => new Date(d.date)));
+      const y1Scale = d3
+        .scaleLinear()
+        .range([290, 10])
+        .domain([0, d3.max(dailyCount, (d) => d.newCases)]);
+      const y2Scale = d3
+        .scaleLinear()
+        .range([290, 10])
+        .domain([0, d3.max(topicNum, (d) => d.opinionCount)]);
+
+      // axis
+      const xAxis = d3
+        .axisBottom(xScale)
+        .tickFormat(d3.timeFormat("%m-%y"))
+        .ticks(5);
+      const yAxisLeft = d3
+        .axisLeft(y1Scale)
+        .tickFormat((value) => (value / 10000).toFixed(1) + "万")
+        .ticks(5);
+      const yAxisRight = d3
+        .axisRight(y2Scale)
+        .tickFormat((value) => (value / 10000).toFixed(1) + "万")
+        .ticks(5);
+
+      // axis tick
+      svg
+        .select(".x-axis")
+        .call(xAxis)
+        .selectAll("text")
+        .style("font-size", "18px");
+      svg
+        .select(".y-axis.left")
+        .call(yAxisLeft)
+        .selectAll("text")
+        .style("font-size", "18px");
+      svg
+        .select(".y-axis.right")
+        .call(yAxisRight)
+        .selectAll("text")
+        .style("font-size", "18px");
+
+      const line1 = d3
+        .line()
+        .x((d) => xScale(new Date(d.date)))
+        .y((d) => y1Scale(d.newCases));
+
+      const line2 = d3
+        .line()
+        .x((d) => xScale(new Date(d.date)))
+        .y((d) => y2Scale(d.opinionCount));
+
+      svg.selectAll(".line").remove();
+
+      svg
+        .append("path")
+        .data([dailyCount])
+        .attr("class", "line line1")
+        .attr("d", line1)
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("fill", "none");
+
+      svg
+        .append("path")
+        .datum(topicNum)
+        .attr("class", "line line2")
+        .attr("d", line2)
+        .attr("stroke", "orange")
+        .attr("stroke-width", 2)
+        .attr("fill", "none");
+
+      // tooltip style
+      const tooltip = d3
+        .select(container.current)
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("z-index", "10")
+        .style("display", "none")
+        .style("background", "#fff")
+        .style("padding", "5px")
+        .style("border-radius", "5px")
+        .style("width", "100px")
+        .style("max-height", "60px");
+
+      // new case tooltip
+      svg
+        .selectAll(".circle1")
+        .data(dailyCount)
+        .join("circle")
+        .attr("class", "circle1")
+        .attr("cx", (d) => xScale(new Date(d.date)))
+        .attr("cy", (d) => y1Scale(d.newCases))
+        .attr("r", 3)
+        .attr("fill", "steelblue")
+        .on("mouseover", (d) => {
+          tooltip
+            .style("display", "block")
+            .html(
+              `日期: ${d.date}<br/>新增病例: ${(d.newCases / 10000).toFixed(
+                1
+              )} 万`
+            )
+            .style("left", `85px`)
+            .style("top", `50px`)
+            .style("color", "black")
+            .style("font-size", "10px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+        });
+
+      // opinion tooltip
+      svg
+        .selectAll(".circle2")
+        .data(topicNum)
+        .join("circle")
+        .attr("class", "circle2")
+        .attr("cx", (d) => xScale(new Date(d.date)))
+        .attr("cy", (d) => y2Scale(d.opinionCount))
+        .attr("r", 3)
+        .attr("fill", "orange")
+        .on("mouseover", (d) => {
+          tooltip
+            .style("display", "block")
+            .html(
+              `日期: ${d.date}<br/>舆情数量: ${(d.opinionCount / 10000).toFixed(
+                1
+              )} 万`
+            )
+            .style("left", `85px`)
+            .style("top", `50px`)
+            .style("color", "black")
+            .style("font-size", "10px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+        });
+    }
+
+    initChart();
+    getData();
+  }, []);
+
+  return (
+    <Section title="每日新增与舆情数量">
+      <div className="chart-container" ref={container} />
+    </Section>
+  );
 }
