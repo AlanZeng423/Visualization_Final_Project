@@ -150,21 +150,23 @@ export default function Index() {
 
       svg.selectAll(".line").remove();
 
+      // new case line chart
       svg
         .append("path")
         .data([dailyCount])
         .attr("class", "line line1")
         .attr("d", line1)
-        .attr("stroke", "steelblue")
+        .attr("stroke", "#F1948A")
         .attr("stroke-width", 2)
         .attr("fill", "none");
 
+      // opinion line chart
       svg
         .append("path")
         .datum(topicNum)
         .attr("class", "line line2")
         .attr("d", line2)
-        .attr("stroke", "orange")
+        .attr("stroke", "#F7DC6F")
         .attr("stroke-width", 2)
         .attr("fill", "none");
 
@@ -179,7 +181,7 @@ export default function Index() {
         .style("background", "#fff")
         .style("padding", "5px")
         .style("border-radius", "5px")
-        .style("width", "100px")
+        .style("width", "110px")
         .style("max-height", "60px");
 
       // new case tooltip
@@ -191,19 +193,17 @@ export default function Index() {
         .attr("cx", (d) => xScale(new Date(d.date)))
         .attr("cy", (d) => y1Scale(d.newCases))
         .attr("r", 3)
-        .attr("fill", "steelblue")
-        .on("mouseover", (d) => {
+        .attr("fill", "#F1948A")
+        .on("mouseover", (event, d) => {
           tooltip
             .style("display", "block")
             .html(
-              `日期: ${d.date}<br/>新增病例: ${(d.newCases / 10000).toFixed(
-                1
-              )} 万`
+              `${d.date}<br/>新增病例: ${(d.newCases / 10000).toFixed(1)} 万`
             )
-            .style("left", `85px`)
-            .style("top", `50px`)
+            .style("left", `87px`)
+            .style("top", `75px`)
             .style("color", "black")
-            .style("font-size", "10px");
+            .style("font-size", "13px");
         })
         .on("mouseout", () => {
           tooltip.style("display", "none");
@@ -218,19 +218,20 @@ export default function Index() {
         .attr("cx", (d) => xScale(new Date(d.date)))
         .attr("cy", (d) => y2Scale(d.opinionCount))
         .attr("r", 3)
-        .attr("fill", "orange")
-        .on("mouseover", (d) => {
+        .attr("fill", "#F7DC6F")
+        .on("mouseover", (event, d) => {
           tooltip
             .style("display", "block")
             .html(
-              `日期: ${d.date}<br/>舆情数量: ${(d.opinionCount / 10000).toFixed(
+              `${d.date}<br/>舆情数量: ${(d.opinionCount / 10000).toFixed(
                 1
               )} 万`
             )
-            .style("left", `85px`)
-            .style("top", `50px`)
+            .style("left", `87px`)
+            .style("top", `75px`)
             .style("color", "black")
-            .style("font-size", "10px");
+            .style("text-align", "center")
+            .style("font-size", "13px");
         })
         .on("mouseout", () => {
           tooltip.style("display", "none");
