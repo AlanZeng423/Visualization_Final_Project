@@ -76,7 +76,7 @@ export default function Index() {
 
           const topicNum = _.chain(topicNumData)
             .map((d) => ({
-              date: moment(d.Date, "MM月DD").format("YYYY-MM-DD"),
+              date: moment(d.Date, "MM月DD").format("2020-MM-DD"),
               opinionCount: +d["总计"],
             }))
             .orderBy("date")
