@@ -29,9 +29,7 @@ export default function Opinion() {
 
       <div className="opinion-right">
         <div className="calendar">
-          <Section title="每日谣言热点分布">
-            <Calendar />
-          </Section>
+          <Calendar />
         </div>
       </div>
     </div>

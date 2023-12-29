@@ -5,9 +5,10 @@ import _ from "lodash";
 import axios from "@/services";
 import Section from "@/components/section";
 
-const colorBar = d3.scaleOrdinal(d3.schemeAccent);
+const colorBar = d3.scaleOrdinal(d3.schemeAccent); // three color
 
 export default function BarChart() {
+  // reference for accessing DOM
   const container = useRef(null);
   const svgcRef = useRef(null);
   const svg = useRef(null);
@@ -17,16 +18,16 @@ export default function BarChart() {
   const dateData = useRef([]);
   const methods = useRef({});
 
+  // emotion state
   const [activeType, setActiveType] = useState(["positive"]);
-
+  // date state
   const [theDate, setTheDate] = useState(
-    moment("2020/2/25").format("YYYY-MM-DD")
+    moment("2020/1/31").format("YYYY-MM-DD")
   );
 
   useEffect(() => {
-    function updateBarData(date) {
-      console.log(date);
-
+    function updateHourData(date) {
+      // create data object with date and emotion
       currentData.current = _.chain(originData.current[date] || [])
         .map((d) => ({
           date: moment(d.date, "YYYY-MM-DD HH:mm").startOf("hour").valueOf(),
@@ -46,15 +47,19 @@ export default function BarChart() {
         .values()
         .orderBy("date")
         .value();
-      console.log(currentData.current);
     }
+
     function initData() {
       const promiseArr = [];
+
+      // calculate days in between
       const days =
         (moment("2020-4-1").valueOf() - moment("2020-1-9").valueOf()) /
         (3600 * 1000 * 24);
 
-      dateData.current = [];
+      dateData.current = []; //initialize dateData ref
+
+      // loop everyday and add the date to dateData
       for (let i = 0; i < days; i++) {
         const date = moment("2020-1-9").add(i, "day").format("YYYY-MM-DD");
         dateData.current.push(date);
@@ -74,63 +79,65 @@ export default function BarChart() {
             .orderBy((d) => moment(d).valueOf())
             .value();
 
-          initChart();
+          initChart(); // init chart after date data is fetched
         });
       });
     }
 
     function initChart() {
+      // extract container width and height and get the smaller one
       const { clientWidth, clientHeight } = container.current;
-      const width = d3.min([clientWidth, clientHeight]);
-      const radius = width / 2;
-      const barRadius = [radius - radius * 0.7, radius];
-      const dateRadius = [radius / 8, barRadius[0]];
-      const monthRadius = [0, dateRadius[0]];
+      const size = d3.min([clientWidth, clientHeight]);
+
+      // calculate chart components
+      const radius = size / 2;
+      const barRadius = [radius - radius * 0.7, radius]; // outer layer
+      const dateRadius = [radius / 8, barRadius[0]]; // middle layer
+      const monthRadius = [0, dateRadius[0]]; // inner layer
+
+      // store layout dimension in layout ref
       layout.current = {
-        width,
+        size,
         barRadius,
         dateRadius,
         monthRadius,
       };
 
+      // remove existing chart elements
       d3.select(svgcRef.current).select("g").remove();
+
+      // init svg element
       svg.current = d3
         .select(svgcRef.current)
-        .attr("width", width)
-        .attr("height", width)
-        .attr("viewBox", `0 0 ${width} ${width}`)
+        .attr("width", size)
+        .attr("height", size)
+        .attr("viewBox", `0 0 ${size} ${size}`)
         .append("g")
-        .attr("transform", `translate(${width / 2}, ${width / 2})`);
+        .attr("transform", `translate(${size / 2}, ${size / 2})`);
 
-      updateBarData(theDate);
-
-      const month = moment(theDate).month() + 1;
-
-      drawMonth();
-      drawPie(month);
-      updateBar();
-    }
-
-    function updateBar() {
-      svg.current.selectAll("g.arcBar").remove();
-      ["positive", "neural", "negative"].forEach((d) => {
-        drawBar(d);
-      });
+      const month = moment(theDate).month() + 1; // get month of selected date
+      drawMonth(); // draw month pie chart (inner layer)
+      drawDay(month); // draw day pie chart of selected month (middle layer)
+      updateHourData(theDate); // update chart data for selected date
+      updateHour(); // update and draw hour bars of selected day(outer layer)
     }
 
     function drawMonth() {
+      // extract month data from dateData ref
       const monthData = _.chain(dateData.current)
         .map((d) => moment(d).month() + 1)
         .uniq()
         .value();
 
+      // create pie chart generator
       const pie = d3
         .pie()
         .padAngle(() => 0.02)
         .value(() => 1);
 
-      const arcsData = pie(monthData);
+      const arcsData = pie(monthData); // create pie chart for monthData
 
+      // create slice generator
       const { monthRadius } = layout.current;
       const arc = d3
         .arc()
@@ -138,26 +145,63 @@ export default function BarChart() {
         .innerRadius(() => monthRadius[0])
         .cornerRadius(() => 5);
 
+      d3.selectAll(".tooltip-month").remove(); // remove existing tooltip
+      console.log(arcsData);
+      // tooltip style
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "tooltip-month")
+        .style("position", "absolute")
+        .style("z-index", "1200")
+        .style("background", "#fff")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("display", "none");
+
       const arcG = svg.current
         .append("g")
         .classed("monthG", true)
         .selectAll("g.arcG")
+        // add group for each data in arcsData
         .data(arcsData)
         .enter()
         .append("g")
         .classed("arcDate", true)
         .on("click", (d) => {
-          const { data: month } = d;
-          drawPie(month);
+          const month = d.target.__data__.data; // get target month
+          drawDay(month); // draw day piechart of target month
+        })
+        .on("mouseover", (event, d) => {
+          const month = d.data;
+
+          tooltip
+            .html(`日期：2020-0${month}`)
+            .style("display", "block")
+            .style("color", "black")
+            .style("text-align", "left")
+            .style("font-size", "15px");
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("top", event.pageY + "px")
+            .style("left", event.pageX - 120 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
         })
         .attr("cursor", "pointer");
 
-      arcG.append("path").attr("d", arc).attr("fill", "#ffaa00");
+      // use path to draw every arcG using arc()
+      arcG.append("path").attr("d", arc).attr("fill", "#FFC550");
     }
 
-    function drawPie(month) {
+    function drawDay(month) {
+      // get start and end date for selected month
       const startDate = moment(`2020/${month}/1`);
       const endDate = moment(startDate).add(1, "month");
+
+      // filter dateData ref for selected month
       const data = _.chain(dateData.current)
         .filter(
           (d) =>
@@ -165,13 +209,16 @@ export default function BarChart() {
             moment(d).unix() < endDate.unix()
         )
         .value();
+
+      // create pie chart generator
       const pie = d3
         .pie()
         .padAngle(() => 0.01)
         .value(() => 1);
 
-      const arcsData = pie(data);
+      const arcsData = pie(data); // create pie chart for selected month
 
+      // create slice generator
       const { dateRadius } = layout.current;
       const arc = d3
         .arc()
@@ -179,42 +226,98 @@ export default function BarChart() {
         .innerRadius(() => dateRadius[0])
         .cornerRadius(() => 5);
 
-      svg.current.selectAll("g.pieDate").remove();
+      svg.current.selectAll("g.pieDate").remove(); // remove existing pie chart
+      d3.selectAll(".tooltip-day").remove(); // remove existing tooltip
+
+      // tooltip style
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "tooltip-day")
+        .style("position", "absolute")
+        .style("z-index", "1200")
+        .style("background", "#fff")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("display", "none");
 
       const arcG = svg.current
         .append("g")
         .classed("pieDate", true)
         .selectAll("g.arcDate")
+        // add group for each data in arcsData
         .data(arcsData)
         .enter()
         .append("g")
         .classed("arcDate", true)
         .on("click", (d) => {
-          const { data } = d;
-          const date = moment(data).format("YYYY-MM-DD");
-          setTheDate(date);
-          // updateBarData(date)
-          // updateBar()
+          const date = d.target.__data__.data; // get target date
+          setTheDate(date); // update date and draw hour piechart of target date
+        })
+        .on("mouseover", (event, d) => {
+          const date = moment(d.data).format("MM-DD");
+
+          tooltip
+            .html(`日期：${date}`)
+            .style("display", "block")
+            .style("color", "black")
+            .style("text-align", "left")
+            .style("font-size", "15px");
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("top", event.pageY + "px")
+            .style("left", event.pageX - 115 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
         })
         .attr("cursor", "pointer");
 
-      arcG.append("path").attr("d", arc).attr("fill", "#202f5e");
+      // use path to draw every arcG using arc()
+      arcG.append("path").attr("d", arc).attr("fill", "#247DB9");
+    }
+
+    d3.selectAll(".tooltip-hour").remove(); // remove existing tooltip-hour
+
+    // tooltip style
+    const tooltip_hour = d3
+      .select("body")
+      .append("div")
+      .attr("class", "tooltip-hour")
+      .style("display", "none")
+      .style("position", "absolute")
+      .style("z-index", "1200")
+      .style("background", "#fff")
+      .style("padding", "10px")
+      .style("border-radius", "5px");
+
+    function updateHour() {
+      svg.current.selectAll("g.arcBar").remove(); // remove existing bars
+
+      // draw every emotion bars
+      ["positive", "neural", "negative"].forEach((d) => {
+        drawBar(d);
+      });
     }
 
     function drawBar(sortKey) {
       const { barRadius } = layout.current;
       const { current: data } = currentData;
 
+      // create extent and radius scale for selected emotion
       const extent = d3.extent(data, (d) => +d[sortKey]);
       const scale = d3.scaleLinear().domain(extent).range(barRadius);
 
+      // create pie chart generator
       const pie = d3
         .pie()
         .padAngle(() => 0.01)
         .value(() => 1);
 
-      const arcsData = pie(data);
+      const arcsData = pie(data); // create pie chart for selected emotion
 
+      // create slice generator with scale
       const arc = d3
         .arc()
         .outerRadius((d) => scale(+d.data[sortKey]))
@@ -225,21 +328,57 @@ export default function BarChart() {
         .append("g")
         .classed("arcBar", true)
         .classed(`bar-${sortKey}`, true)
-        .attr("display", () => (activeType.includes(sortKey) ? null : "none"))
+        //display bars if current emotion is selected
+        .attr("display", () =>
+          activeType.includes(sortKey) ? "block" : "none"
+        )
         .selectAll("g.arcG")
+        // add group for each data in arcsData
         .data(arcsData)
         .enter()
         .append("g")
-        .classed("arcG", true);
+        .classed("arcG", true)
+        .on("mouseover", (event, d) => {
+          let content;
+          switch (sortKey) {
+            case "positive":
+              content = `时间：${d.index}:00<br/>人数：${d.data.positive} `;
+              break;
+            case "negative":
+              content = `时间：${d.index}:00<br/>人数：${d.data.negative}`;
+              break;
+            case "neural":
+              content = `时间：${d.index}:00<br/>人数：${d.data.neural}`;
+              break;
+          }
 
+          tooltip_hour
+            .html(content)
+            .style("display", "block")
+            .style("color", "black")
+            .style("text-align", "left")
+            .style("font-size", "15px");
+        })
+        .on("mousemove", (event) => {
+          tooltip_hour
+            .style("top", event.pageY + "px")
+            .style("left", event.pageX - 110 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip_hour.style("display", "none");
+        });
+
+      // use path to draw every arcG using arc()
       arcG
         .append("path")
         .attr("d", arc)
         .attr("fill", () => colorBar(sortKey))
-        .attr("opacity", 0.5)
+        .attr("opacity", 0.8) // decrease opacity to stack other emotion
+        // animate bars
         .transition()
         .duration(400)
         .ease(d3.easeCubicOut)
+        // smoothly transition piechart from initial to final state
         .attrTween("d", (d) => {
           const i = d3.interpolateObject(
             {
@@ -249,13 +388,14 @@ export default function BarChart() {
                 ...d.data,
                 [sortKey]: 0,
               },
-            },
-            d
+            }, // initial state
+            d //final state
           );
-          return (t) => arc(i(t));
+          return (t) => arc(i(t)); // compute the path of interpolate state of current progress
         });
     }
-    methods.current.updateBar = updateBar;
+
+    methods.current.updateHour = updateHour;
     initData();
   }, [activeType, theDate]);
 
@@ -268,6 +408,7 @@ export default function BarChart() {
     }
     setActiveType(activeArr);
   };
+
   return (
     <Section title="情感分析">
       <div

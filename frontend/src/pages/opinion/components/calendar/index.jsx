@@ -5,6 +5,7 @@ import _ from "lodash";
 import axios from "@/services";
 import { extent } from "d3";
 import { formatDate } from "@/utils";
+import Section from "@/components/section";
 
 const cellSize = 30;
 
@@ -42,12 +43,16 @@ export default function Index() {
         const dateRange = extent(data, (d) => d.timeStamp).map((d) =>
           moment(d).format("YYYY-MM-DD")
         );
-        const start = moment(dateRange[0]).startOf("week"); // get minDate moment
-        const end = moment(dateRange[1]).endOf("week"); // get maxDate moment
 
+        // get minDate and maxDate moment
+        const start = moment(dateRange[0]).startOf("week");
+        const end = moment(dateRange[1]).endOf("week");
+
+        // custom color scale
         const color = ["#F1948A", "#85C1E9", "#F9E79F"];
-        const colorScale = d3.scaleOrdinal().range(color); // custom color scale
+        const colorScale = d3.scaleOrdinal().range(color);
 
+        // init svg element
         const svg = d3
           .select(container.current)
           .append("svg")
@@ -191,5 +196,9 @@ export default function Index() {
     }
     initData();
   }, []);
-  return <div ref={container} className="chart-container" />;
+  return (
+    <Section title="每日谣言热点分布">
+      <div ref={container} className="chart-container" />
+    </Section>
+  );
 }
