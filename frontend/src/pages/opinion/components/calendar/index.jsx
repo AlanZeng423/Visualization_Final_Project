@@ -8,6 +8,7 @@ import { formatDate } from "@/utils";
 import Section from "@/components/section";
 
 const cellSize = 30;
+const colorScale = d3.scaleOrdinal().range(["#F1948A", "#85C1E9", "#F9E79F"]);
 
 export default function Index() {
   const container = useRef(null);
@@ -48,10 +49,6 @@ export default function Index() {
         const start = moment(dateRange[0]).startOf("week");
         const end = moment(dateRange[1]).endOf("week");
 
-        // custom color scale
-        const color = ["#F1948A", "#85C1E9", "#F9E79F"];
-        const colorScale = d3.scaleOrdinal().range(color);
-
         // init svg element
         const svg = d3
           .select(container.current)
@@ -63,7 +60,7 @@ export default function Index() {
         const legend = svg
           .append("g")
           .attr("class", "legend")
-          .attr("transform", "translate(20, 10)");
+          .attr("transform", "translate(60, 15)");
 
         const legendItem = legend
           .selectAll(".legend-item")
@@ -93,7 +90,7 @@ export default function Index() {
           .data([null])
           .join("g")
           .attr("class", "calendar")
-          .attr("transform", "translate(30, 40)")
+          .attr("transform", "translate(60, 50)")
           .attr("fill", "none")
           .attr("stroke", "white");
 
@@ -105,14 +102,14 @@ export default function Index() {
           .attr("class", "week")
           .attr("width", "100%")
           .attr("height", "100%")
-          .attr("transform", (d, i) => `translate(0, ${i * cellSize})`);
+          .attr("transform", (d, i) => `translate(0, ${i * (cellSize + 2.5)})`);
 
         // month label
         weeks
           .filter((d, i) => (i + 2) % 4 === 0)
           .append("text")
           .attr("x", -5)
-          .attr("y", cellSize / 2)
+          .attr("y", (cellSize + 2.5) / 2)
           .attr("text-anchor", "end")
           .attr("alignment-baseline", "middle")
           .attr("fill", "white")
@@ -125,13 +122,16 @@ export default function Index() {
           .data((d) => d3.timeDays(d, moment(d).endOf("week")))
           .join("g")
           .attr("class", "day")
-          .attr("transform", (d) => `translate(${d.getDay() * cellSize}, 0)`);
+          .attr(
+            "transform",
+            (d) => `translate(${d.getDay() * (cellSize + 2.5)}, 0)`
+          );
 
         // create rectangle for each day
         days
           .append("rect")
-          .attr("width", `${cellSize}`)
-          .attr("height", `${cellSize}`);
+          .attr("width", `${cellSize + 2.5}`)
+          .attr("height", `${cellSize + 2.5}`);
 
         // tooltip style
         const tooltip = d3
@@ -162,7 +162,7 @@ export default function Index() {
           .attr("class", "arc")
           .attr(
             "transform",
-            (d) => `translate(${cellSize / 2}, ${cellSize / 2})`
+            (d) => `translate(${(cellSize + 2.5) / 2}, ${(cellSize + 2.5) / 2})`
           )
           .attr(
             "d",
@@ -176,18 +176,18 @@ export default function Index() {
           .on("mouseover", (event, d) => {
             tooltip
               .html(
-                `${d.date}<br/>
+                `日期：${d.date}<br/>
 				${category[d.index]}: ${d.data}`
               )
               .style("display", "block")
               .style("color", "black")
-              .style("text-align", "center")
+              .style("text-align", "left")
               .style("font-size", "15px");
           })
           .on("mousemove", (event) => {
             tooltip
               .style("top", event.pageY + "px")
-              .style("left", event.pageX - 110 + "px");
+              .style("left", event.pageX - 150 + "px");
           })
           .on("mouseout", () => {
             tooltip.style("display", "none");

@@ -181,7 +181,7 @@ export default function Index() {
         .style("background", "#fff")
         .style("padding", "5px")
         .style("border-radius", "5px")
-        .style("width", "110px")
+        .style("width", "130px")
         .style("max-height", "60px");
 
       // new case tooltip
@@ -198,11 +198,14 @@ export default function Index() {
           tooltip
             .style("display", "block")
             .html(
-              `${d.date}<br/>新增病例: ${(d.newCases / 10000).toFixed(1)} 万`
+              `日期：${d.date}<br/>新增病例: ${(d.newCases / 10000).toFixed(
+                1
+              )} 万`
             )
-            .style("left", `87px`)
-            .style("top", `75px`)
+            .style("left", `95px`)
+            .style("top", `65px`)
             .style("color", "black")
+            .style("text-align", "left")
             .style("font-size", "13px");
         })
         .on("mouseout", () => {
@@ -223,14 +226,14 @@ export default function Index() {
           tooltip
             .style("display", "block")
             .html(
-              `${d.date}<br/>舆情数量: ${(d.opinionCount / 10000).toFixed(
+              `日期：${d.date}<br/>舆情数量: ${(d.opinionCount / 10000).toFixed(
                 1
               )} 万`
             )
-            .style("left", `87px`)
-            .style("top", `75px`)
+            .style("left", `95px`)
+            .style("top", `65px`)
             .style("color", "black")
-            .style("text-align", "center")
+            .style("text-align", "left")
             .style("font-size", "13px");
         })
         .on("mouseout", () => {

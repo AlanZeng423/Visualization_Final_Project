@@ -5,7 +5,8 @@ import _ from "lodash";
 import axios from "@/services";
 import Section from "@/components/section";
 
-const colorBar = d3.scaleOrdinal(d3.schemeAccent); // three color
+// custom color scale
+const colorBar = d3.scaleOrdinal().range(["#F1948A", "#85C1E9", "#F9E79F"]);
 
 export default function BarChart() {
   // reference for accessing DOM
@@ -146,7 +147,7 @@ export default function BarChart() {
         .cornerRadius(() => 5);
 
       d3.selectAll(".tooltip-month").remove(); // remove existing tooltip
-      console.log(arcsData);
+
       // tooltip style
       const tooltip = d3
         .select("body")
@@ -185,7 +186,7 @@ export default function BarChart() {
         .on("mousemove", (event) => {
           tooltip
             .style("top", event.pageY + "px")
-            .style("left", event.pageX - 120 + "px");
+            .style("left", event.pageX - 130 + "px");
         })
         .on("mouseout", () => {
           tooltip.style("display", "none");
@@ -275,7 +276,7 @@ export default function BarChart() {
         .attr("cursor", "pointer");
 
       // use path to draw every arcG using arc()
-      arcG.append("path").attr("d", arc).attr("fill", "#247DB9");
+      arcG.append("path").attr("d", arc).attr("fill", "#135A8A");
     }
 
     d3.selectAll(".tooltip-hour").remove(); // remove existing tooltip-hour
@@ -373,7 +374,7 @@ export default function BarChart() {
         .append("path")
         .attr("d", arc)
         .attr("fill", () => colorBar(sortKey))
-        .attr("opacity", 0.8) // decrease opacity to stack other emotion
+        .attr("opacity", 0.7) // decrease opacity to stack other emotion
         // animate bars
         .transition()
         .duration(400)

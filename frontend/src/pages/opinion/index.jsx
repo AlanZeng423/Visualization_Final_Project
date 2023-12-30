@@ -1,11 +1,10 @@
 import React from "react";
-import Table from "./components/table";
+import style from "./index.less";
 import NewNCount from "./components/newNCount";
+import Table from "./components/table";
+import BarChart from "./components/barChart";
 import Rumors from "./components/rumors";
 import Calendar from "./components/calendar";
-import style from "./index.less";
-import Section from "@/components/section";
-import BarChart from "./components/barChart";
 
 export default function Opinion() {
   return (
